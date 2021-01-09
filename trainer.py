@@ -45,7 +45,11 @@ def increaseContrast(img, factor=20):
   res = np.clip(128 + factor * img - factor * 128, 0, 255).astype(np.uint8)
   return res.flatten()
 
-# generic function to train a model used for parallel training
+def normalize(img):
+  res = img / 255
+  return res
+
+# generic function to train a model 
 @ignore_warnings(category=ConvergenceWarning)
 def train(model, X, Y, mode, start_time):
   res = model.fit(X, Y)
@@ -53,6 +57,7 @@ def train(model, X, Y, mode, start_time):
   print(f"{mode} has done. Time elasped {elapsed} seconds")
   return model, mode
 
+# generic function to run cross validation 
 @ignore_warnings(category=ConvergenceWarning)
 def crossValidate(model, X, Y, cv, mode, start_time):
   res = cross_val_predict(model, X, Y, cv=cv)
@@ -74,11 +79,16 @@ if __name__ == "__main__":
   X_train = np.array(list(map(increaseContrast, X_train)))
   X_test = np.array(list(map(increaseContrast, X_test)))
   cv_X = np.array(list(map(increaseContrast, cv_X)))
+  # Do I need to nomalize ?
+  # X_train = np.array(list(map(normalize, X_train)))
+  # X_test = np.array(list(map(normalize, X_test)))
+  # cv_X = np.array(list(map(normalize, cv_X)))
   print(f"Training set X, Y Dimenstions : {X_train.shape} {Y_train.shape}")
   print(f"Testing set X, Y Dimenstions : {X_test.shape} {Y_test.shape}")
   print(f"Cross validation set X, Y Dimenstions : {cv_X.shape} {cv_Y.shape}")
-  svc = None; rfc = None; lgrs = None
+  svc = None; rfc = None; lrgs = None
   svc_scores = None; rfc_scores = None; lrgs_scores = None
+
   print("##### Start Training #####")
   #SVC
   svc = SVC(gamma='scale')
@@ -90,26 +100,29 @@ if __name__ == "__main__":
   rfc, _ = train(rfc, X_train, Y_train, "RFC", start_time)
   # LGRS
   start_time = time.time()
-  lgrs = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=5000)
-  lgrs, _ = train(lgrs, X_train, Y_train, "LGRS", start_time)
+  lrgs = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=5000)
+  lrgs, _ = train(lrgs, X_train, Y_train, "LRGS", start_time)
   print("#############\n")
-  # print("##### Saving Classifiers #####")
-  # joblib.dump(svc, "saved_model/Classifier-svc")
-  # joblib.dump(rfc, "saved_model/Classifier-rfc")
-  # joblib.dump(lrgs, "saved_model/Classifier-lgrs")
+
+  print("##### Saving Classifiers #####\n")
+  joblib.dump(svc, "saved_model/Classifier-svc")
+  joblib.dump(rfc, "saved_model/Classifier-rfc")
+  joblib.dump(lrgs, "saved_model/Classifier-lrgs")
+
   print("##### Start Cross Validation #####")
   start_time = time.time()
   _, svc_scores, _ = crossValidate(svc, cv_X, cv_Y, 10, "SVC", start_time)
   start_time = time.time()
   _, rfc_scores, _ = crossValidate(rfc, cv_X, cv_Y, 10, "RFC", start_time)
   start_time = time.time()
-  _, lgrs_scores, _ = crossValidate(lgrs, cv_X, cv_Y, 10, "LRGS", start_time)
+  _, lrgs_scores, _ = crossValidate(lrgs, cv_X, cv_Y, 10, "LRGS", start_time)
   print("#############\n")
+
   print("##### Cross Validation Accuracy #####")
   print(f"Support Vector Classifier: {accuracy_score(cv_Y,svc_scores)}")
   print(f"Random Forest Classifier: {accuracy_score(cv_Y,rfc_scores)}")
   print(f"Logistic Regression Classifier: {accuracy_score(cv_Y,lrgs_scores)}")
-
+  print("#############\n")
 
 # The code block below is for parallel training, however my system does not have enough ram for it
   # print("##### Training #####")
@@ -152,7 +165,7 @@ if __name__ == "__main__":
   # print("##### Saving Classifiers #####")
   # joblib.dump(svc, "saved_model/Classifier-svc")
   # joblib.dump(rfc, "saved_model/Classifier-rfc")
-  # joblib.dump(lrgs, "saved_model/Classifier-lgrs")
+  # joblib.dump(lrgs, "saved_model/Classifier-lrgs")
 
   # print("##### Cross Validation #####")
   # with ProcessPoolExecutor() as executor :

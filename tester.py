@@ -11,6 +11,24 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import  LogisticRegression
 from sklearn.model_selection import cross_val_predict
 
+
+FashionLabel = {
+  0 : "T-shirt/top",
+  1 : "Trouser",
+  2 : "Pullover",
+  3 : "Dress",
+  4 : "Coat",
+  5 : "Sandal",
+  6 : "Shirt",
+  7 : "Sneaker",
+  8 : "Bag",
+  9 : "Ankle boot",
+}
+svcMissLabels = list(range(10))
+rfcMissLabels = list(range(10))
+lrgsMissLabels = list(range(10))
+LabelsCnt = list(range(10))
+
 # Increases the contrast of an image
 # Factor can be changed to yield better results
 def increaseContrast(img, factor=20):
@@ -34,41 +52,62 @@ if __name__ == "__main__":
   X_test = np.array(list(map(increaseContrast, X_test)))
 
   print("##### Read Classifiers #####")
-  svc = readClassifier("saved_model/Classifier-svc", "SVC")
-  rfc = readClassifier("saved_model/Classifier-rfc", "RFC")
-  lgrs = readClassifier("saved_model/Classifier-lgrs", "lgrs")
+  svc, _ = readClassifier("saved_model/Classifier-svc", "SVC")
+  rfc, _ = readClassifier("saved_model/Classifier-rfc", "RFC")
+  lrgs, _ = readClassifier("saved_model/Classifier-lrgs", "LRGS")
   print("#############\n")
 
   start_time = time.time()
   print("##### Predicting #####")
   svc, svc_predict, _ = predict(svc, X_test, "SVC", start_time)
-  rfc, rfc_predict, _ = predict(rfc, X_test, "SVC", start_time)
-  lgrs, lgrs_predict, _ = predict(lgrs, X_test, "SVC", start_time)
+  rfc, rfc_predict, _ = predict(rfc, X_test, "RFC", start_time)
+  lrgs, lrgs_predict, _ = predict(lrgs, X_test, "LRGS", start_time)
   print("#############\n")
 
   # Calculate Accuracy
   test_total = len(Y_test)
   svc_correct_cnt = 0
   rfc_correct_cnt = 0
-  lgrs_correct_cnt = 0
+  lrgs_correct_cnt = 0
   for i in range(test_total):
     if (svc_predict[i] == Y_test[i]) :
       svc_correct_cnt += 1
+    else :
+      svcMissLabels[Y_test[i]] += 1
     if (rfc_predict[i] == Y_test[i]) :
       rfc_correct_cnt += 1
-    if (lgrs_predict[i] == Y_test[i]) :
-      lgrs_correct_cnt += 1
+    else :
+      rfcMissLabels[Y_test[i]] += 1
+    if (lrgs_predict[i] == Y_test[i]) :
+      lrgs_correct_cnt += 1
+    else :
+      lrgsMissLabels[Y_test[i]] += 1
+    LabelsCnt[Y_test[i]] += 1
   
   svc_accur = svc_correct_cnt / test_total
   rfc_accur = rfc_correct_cnt / test_total
-  lgrs_accur = lgrs_correct_cnt / test_total
+  lrgs_accur = lrgs_correct_cnt / test_total
   
   print("##### Accuracy #####")
   print(f"Total test data : {test_total}")
   print(f"Support Vector Machine : {svc_accur}")
   print(f"Random Forest : {rfc_accur}")
-  print(f"Logistic Regression : {lgrs_accur}")
+  print(f"Logistic Regression : {lrgs_accur}")
+  print("#############\n")
 
   table = PrettyTable(['', 'SVC', 'RFC', 'LRC'])
-  table.add_row(['Accuracy', svc_accur, rfc_accur, lgrs_accur])
+  table.add_row(['Accuracy', svc_accur, rfc_accur, lrgs_accur])
   print(table)
+  print()
+  misslabel_table = PrettyTable([
+    'ID', 'Label', 'SVC Miss labels' '% missclassified', 'RFC Miss labels', '% missclassified', 'LRGS Miss labels', '% missclassified', 'Total'
+  ])
+  for (key, val) in FashionLabel.items() :
+    misslabel_table.add_row([
+      key, val, 
+      svcMissLabels[key], svcMissLabels[key]/LabelsCnt[key], 
+      rfcMissLabels[key], rfcMissLabels[key]/LabelsCnt[key], 
+      lrgsMissLabels[key], lrgsMissLabels[key]/LabelsCnt[key],
+      LabelsCnt[key]  
+    ])
+  print(misslabel_table)
