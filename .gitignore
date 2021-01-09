@@ -1,2 +1,6 @@
 *.gz
 *.docx
+__pycache__
+TrafficSignClassification_tester.py
+TrafficSignClassification_trainer.py
+TrafficSignData.zip
