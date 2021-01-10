@@ -4,6 +4,7 @@
 # for metrics and parallel processing
 import time
 import joblib
+import random
 from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
 
 from utils import mnist_reader 
@@ -67,25 +68,34 @@ def crossValidate(model, X, Y, cv, mode, start_time):
 
 # only train when it is run as main program
 if __name__ == "__main__":
-  X, Y= mnist_reader.load_mnist('data', kind="train")
+  X_pre, Y_pre= mnist_reader.load_mnist('data', kind="train")
+  # Bundle 2 array together and run a shuffle to it
+  bundled = []
+  for i in range(len(X_pre)):
+    bundled.append([X_pre[i], Y_pre[i]])
+  random.shuffle(bundled)
+
+  # de bundled the dataset
+  X = np.array([ x[0] for x in bundled])
+  Y = np.array([ y[1] for y in bundled])
+
+  # preprocess all data 
+  X = np.array(list(map(increaseContrast,X)))
+  X = np.array(list(map(normalize,X)))
+
   # 0.7 for training, 0.2 for testing, 0.1 for cross validation
   t_point = int(round(0.7 * len(X)))
   latter_bound = int(round(0.2 * len(X)))
 
+  # Splitting dataset 
   X_train, Y_train = X[:t_point], Y[:t_point]
   X_test, Y_test = X[t_point: t_point+latter_bound], Y[t_point :t_point + latter_bound]
   cv_X, cv_Y = X[t_point+latter_bound:], Y[t_point+latter_bound:]
-  # preprocess all data 
-  X_train = np.array(list(map(increaseContrast, X_train)))
-  X_test = np.array(list(map(increaseContrast, X_test)))
-  cv_X = np.array(list(map(increaseContrast, cv_X)))
-  # Do I need to nomalize ?
-  # X_train = np.array(list(map(normalize, X_train)))
-  # X_test = np.array(list(map(normalize, X_test)))
-  # cv_X = np.array(list(map(normalize, cv_X)))
-  print(f"Training set X, Y Dimenstions : {X_train.shape} {Y_train.shape}")
-  print(f"Testing set X, Y Dimenstions : {X_test.shape} {Y_test.shape}")
-  print(f"Cross validation set X, Y Dimenstions : {cv_X.shape} {cv_Y.shape}")
+
+  print(f"Training set X, Y Dimensions : {X_train.shape} {Y_train.shape}")
+  print(f"Testing set X, Y Dimensions : {X_test.shape} {Y_test.shape}")
+  print(f"Cross validation set X, Y Dimensions : {cv_X.shape} {cv_Y.shape}")
+
   svc = None; rfc = None; lrgs = None
   svc_scores = None; rfc_scores = None; lrgs_scores = None
 
@@ -104,10 +114,10 @@ if __name__ == "__main__":
   lrgs, _ = train(lrgs, X_train, Y_train, "LRGS", start_time)
   print("#############\n")
 
-  print("##### Saving Classifiers #####\n")
-  joblib.dump(svc, "saved_model/Classifier-svc")
-  joblib.dump(rfc, "saved_model/Classifier-rfc")
-  joblib.dump(lrgs, "saved_model/Classifier-lrgs")
+  # print("##### Saving Classifiers #####\n")
+  # joblib.dump(svc, "saved_model/Classifier-svc")
+  # joblib.dump(rfc, "saved_model/Classifier-rfc")
+  # joblib.dump(lrgs, "saved_model/Classifier-lrgs")
 
   print("##### Start Cross Validation #####")
   start_time = time.time()
@@ -123,85 +133,3 @@ if __name__ == "__main__":
   print(f"Random Forest Classifier: {accuracy_score(cv_Y,rfc_scores)}")
   print(f"Logistic Regression Classifier: {accuracy_score(cv_Y,lrgs_scores)}")
   print("#############\n")
-
-# The code block below is for parallel training, however my system does not have enough ram for it
-  # print("##### Training #####")
-  # with ProcessPoolExecutor() as executor :
-  #   futures = []
-  #   start_time = time.time()
-  #   # Train SVC
-  #   svc = SVC(gamma='scale')
-  #   futures.append(
-  #     executor.submit(
-  #       train, svc, X_train, Y_train, "SVC", start_time
-  #     )
-  #   )
-  #   # Train RandomForest Classifier
-  #   rfc = RandomForestClassifier(n_estimators=100)
-  #   futures.append(
-  #     executor.submit(
-  #       train, rfc, X_train, Y_train, "RFC", start_time
-  #     )
-  #   )
-  #   # Train LogisticRegression Classifier
-  #   lrgs = LogisticRegression(solver='lbfgs', multi_class='auto', max_iter=5000)
-  #   futures.append(
-  #     executor.submit(
-  #       train, lrgs, X_train, Y_train, "LRGS", start_time
-  #     )
-  #   )
-  #   #wait until all parallel tasks are done
-  #   wait(futures, return_when=ALL_COMPLETED)
-  #   for future in futures:
-  #     model, mode = future.result()
-  #     if mode == "SVC":
-  #       svc = model
-  #     elif mode == "RFC":
-  #       rfc = model
-  #     elif mode == "LRGS":
-  #       lrgs = model
-  # print("#################\n")
-
-  # print("##### Saving Classifiers #####")
-  # joblib.dump(svc, "saved_model/Classifier-svc")
-  # joblib.dump(rfc, "saved_model/Classifier-rfc")
-  # joblib.dump(lrgs, "saved_model/Classifier-lrgs")
-
-  # print("##### Cross Validation #####")
-  # with ProcessPoolExecutor() as executor :
-  #   futures = []
-  #   start_time = time.time()
-
-  #   # SVC
-  #   futures.append(
-  #     executor.submit(
-  #       crossValidate, svc, cv_X, cv_Y, 10, "SVC", start_time
-  #     )
-  #   )
-  #   # RFC
-  #   futures.append(
-  #     executor.submit(
-  #       crossValidate, rfc, cv_X, cv_Y, 10, "SVC", start_time
-  #     )
-  #   )
-  #   # LRGS
-  #   futures.append(
-  #     executor.submit(
-  #       crossValidate, lrgs, cv_X, cv_Y, 10, "SVC", start_time
-  #     )
-  #   )
-  #   wait(futures, return_when=ALL_COMPLETED)
-  #   for future in futures :
-  #     model, cv_scores, mode = future.result()
-  #     if mode == "SVC":
-  #       svc_scores = cv_scores
-  #     elif mode == "RFC":
-  #       rfc_scores = cv_scores
-  #     elif mode == "LRGS":
-  #       lrgs_scores = cv_scores
-  # print("#################\n")
-
-  # print("##### Cross Validation Scoring #####")
-  # print(f"Support Vector Classifier: {accuracy_score(cv_Y,svc_scores)}")
-  # print(f"Random Forest Classifier: {accuracy_score(cv_Y,rfc_scores)}")
-  # print(f"Logistic Regression Classifier: {accuracy_score(cv_Y,lrgs_scores)}")
