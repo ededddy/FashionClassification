@@ -67,7 +67,7 @@ if __name__ == "__main__":
   Y_train = np.array([ y[1] for y in bundled])
 
   # preprocess all data 
-  X = np.array(list(map(increaseContrast,X)))
+  # X = np.array(list(map(increaseContrast,X)))
   X_train = np.array(list(map(normalize,X)))
 
   # 0.9 for training, 0.1 for cross validation 

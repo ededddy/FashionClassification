@@ -10,6 +10,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import  LogisticRegression
 from sklearn.model_selection import cross_val_predict
+import collections 
 
 
 FashionLabel = {
@@ -54,7 +55,7 @@ def readClassifier(url, mode):
 if __name__ == "__main__":
   X_test, Y_test = mnist_reader.load_mnist('data', kind="t10k")
   # Preprocess
-  X_test = np.array(list(map(increaseContrast, X_test)))
+  # X_test = np.array(list(map(increaseContrast, X_test)))
   X_test = np.array(list(map(normalize, X_test)))
 
   print("##### Read Classifiers #####\n")
@@ -74,6 +75,7 @@ if __name__ == "__main__":
   svc_correct_cnt = 0
   rfc_correct_cnt = 0
   lrgs_correct_cnt = 0
+  LabelsCnt = collections.Counter(Y_test)
   for i in range(test_total):
     if (svc_predict[i] == Y_test[i]) :
       svc_correct_cnt += 1
@@ -87,7 +89,6 @@ if __name__ == "__main__":
       lrgs_correct_cnt += 1
     else :
       lrgsMissLabels[Y_test[i]] += 1
-    LabelsCnt[Y_test[i]] += 1
   
   svc_accur = svc_correct_cnt / test_total
   rfc_accur = rfc_correct_cnt / test_total
