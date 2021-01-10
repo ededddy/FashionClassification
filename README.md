@@ -1,9 +1,25 @@
 # Machine learning project at University of Macau
 
-<<<<<<< HEAD
-## Eddy 's env
-1. numpy 1.19.5
-2. scikit_learn 0.24.0 (and all its dependencies)
-=======
-## Put your data (from moodle) in ./data folder
->>>>>>> cb82eb638ef1a34adf4e49d8c583705f055b0240
+## Training and Testing environment
+SPECS: Ryzen 1600 6C12T, 16 GB RAM @ 3200 MHz  
+( CPU Training, GPU is irrelevant)  
+1. Python 3.7
+2. numpy 1.19.5
+3. scikit-learn 0.24.0 (and all its dependencies)
+
+# How to train :
+1. Put your data (from UMMoodle) in `./data` folder  
+(28 x 28 flattend images and corresponding labels on a different file)  
+2. Make sure you have `saved_model` folder created
+3. ```python trainer.py``` and wait for it to finish
+- The trained model are saved in ```saved_model```
+- There is no checkpoint feature
+
+# How to test :
+After you trained the models with `trainer.py`,   
+make sure there are files start with `Classifer-`.
+1. ```python tester.py```
+- `tester.py` will load images named `t10k-images-idx3-ubyte.gz`
+- `tester.py` will load labels named `t10k-labels-idx3-ubyte.gz`
+- Make sure you have above 2 files in `data` folder
+Wait for it to run and look at the results 

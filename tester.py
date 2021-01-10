@@ -37,6 +37,10 @@ def increaseContrast(img, factor=20):
   res = np.clip(128 + factor * img - factor * 128, 0, 255).astype(np.uint8)
   return res.flatten()
 
+def normalize(img):
+  res = img / 255
+  return res
+
 def predict(model, X, mode, start_time):
   res = model.predict(X)
   elapsed = time.time() - start_time 
@@ -49,13 +53,14 @@ def readClassifier(url, mode):
 
 if __name__ == "__main__":
   X_test, Y_test = mnist_reader.load_mnist('data', kind="t10k")
+  # Preprocess
   X_test = np.array(list(map(increaseContrast, X_test)))
+  X_test = np.array(list(map(normalize, X_test)))
 
-  print("##### Read Classifiers #####")
+  print("##### Read Classifiers #####\n")
   svc, _ = readClassifier("saved_model/Classifier-svc", "SVC")
   rfc, _ = readClassifier("saved_model/Classifier-rfc", "RFC")
   lrgs, _ = readClassifier("saved_model/Classifier-lrgs", "LRGS")
-  print("#############\n")
 
   start_time = time.time()
   print("##### Predicting #####")
@@ -100,14 +105,14 @@ if __name__ == "__main__":
   print(table)
   print()
   misslabel_table = PrettyTable([
-    'ID', 'Label', 'SVC Miss labels' '% missclassified', 'RFC Miss labels', '% missclassified', 'LRGS Miss labels', '% missclassified', 'Total'
+    'ID', 'Label', 'SVC Error', 'RFC Errror', 'LRGS Error', 'Total'
   ])
   for (key, val) in FashionLabel.items() :
     misslabel_table.add_row([
       key, val, 
-      svcMissLabels[key], svcMissLabels[key]/LabelsCnt[key], 
-      rfcMissLabels[key], rfcMissLabels[key]/LabelsCnt[key], 
-      lrgsMissLabels[key], lrgsMissLabels[key]/LabelsCnt[key],
+      "%.3f" % ( svcMissLabels[key]/LabelsCnt[key])  , 
+      "%.3f" % ( rfcMissLabels[key]/LabelsCnt[key])  , 
+      "%.3f" % ( lrgsMissLabels[key]/LabelsCnt[key]) ,
       LabelsCnt[key]  
     ])
   print(misslabel_table)
